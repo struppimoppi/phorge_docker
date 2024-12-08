@@ -107,7 +107,7 @@ fi
 # upgrade repos
 if [ "${UPGRADE_ON_RESTART}" = "true" ]; then
    echo "updating arcanist and phorge"
-  
+
    cd $ROOT/arcanist
    sudo -n -u www-data git pull
 
@@ -134,7 +134,23 @@ sudo -n -u www-data ${CONFIG_BIN} set mysql.user ${PH_MYSQL_USER:-root}
 
 sudo -n -u www-data ${CONFIG_BIN} set mysql.host ${PH_MYSQL_HOST:-mariadb}
 
-sudo -n -u www-data ${CONFIG_BIN} set storage.mysql-engine.max-size ${PH_STORAGE_MYSQL_ENGINE_MAX_SIZE:-8388608}
+if [ "${PH_LOCAL_FILE_STORAGE}" = "true" ];
+then
+    lfspath=/var/file_storage
+
+    sudo -n -u www-data ${CONFIG_BIN} set storage.local-disk.path $lfspath
+
+    if [ ! -e $lfspath ]
+    then
+        mkdir $lfspath
+    fi
+
+    chown -R www-data $lfspath
+else
+
+    sudo -n -u www-data ${CONFIG_BIN} set storage.mysql-engine.max-size ${PH_STORAGE_MYSQL_ENGINE_MAX_SIZE:-8388608}
+
+fi
 
 sudo -n -u www-data ${CONFIG_BIN} set pygments.enabled true
 
@@ -147,6 +163,8 @@ if [ "${PH_CLUSTER_MAILERS}" = "true" ]
 then
     sudo -n -u www-data ${CONFIG_BIN} set --stdin cluster.mailers < /usr/src/docker_ph/mailers.json
 fi
+
+cat ${ROOT}/phorge/conf/local/local.json
 
 # set permissions for ssh hook
 chown root /usr/libexec/phorge_ssh_hook.sh

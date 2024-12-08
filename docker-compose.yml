@@ -1,4 +1,3 @@
-version: "3.7"
 # https://docs.docker.com/compose/compose-file/compose-file-v3/
 services:
   caddy:
@@ -32,18 +31,20 @@ services:
       - phorge_db
 
   phorge:
-    image: zeigren/phorge:latest # ghcr.io/zeigren/phorge_docker:latest
+    image: frank/phorge:latest
     # https://hub.docker.com/r/zeigren/phorge
     volumes:
       - phorge_web:/var/www/html
       - phorge_ssh:/etc/ssh
       - phorge_repo:/var/repo
+      - phorge_lfs:/var/file_storage
       # - ./config/phorge_mailers.json:/usr/src/docker_ph/mailers.json
     environment:
       # set UPGRADE_ON_RESTART to true to update phorge
-      - UPGRADE_ON_RESTART=true
+      - UPGRADE_ON_RESTART=false
       - PH_BASE_URI=https://phorge.yourdomain.test
       - PH_MYSQL_PASS=CHANGEME
+      - PH_LOCAL_FILE_STORAGE=true
       # - PH_CLUSTER_MAILERS=true
     networks:
       - phorge
@@ -54,9 +55,25 @@ services:
 
 volumes:
   phorge_db:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/phorge/data
+      o: bind
   phorge_web:
   phorge_ssh:
   phorge_repo:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/phorge/repos
+      o: bind
+  phorge_lfs:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/phorge/files
+      o: bind
   caddy_data:
 
 networks:
