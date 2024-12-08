@@ -147,9 +147,7 @@ then
 
     chown -R www-data $lfspath
 else
-
     sudo -n -u www-data ${CONFIG_BIN} set storage.mysql-engine.max-size ${PH_STORAGE_MYSQL_ENGINE_MAX_SIZE:-8388608}
-
 fi
 
 sudo -n -u www-data ${CONFIG_BIN} set pygments.enabled true
@@ -165,6 +163,23 @@ then
 fi
 
 cat ${ROOT}/phorge/conf/local/local.json
+
+# Make phorge always generate https links and not to worry about the http connection from caddy when the client certainly
+# connects via https to the reverse proxy.
+if [ "${PH_BASE_URI:0:5}" = "https" ];
+then
+    cat > "${ROOT}/phorge/support/preamble.php" <<EOF
+<?php
+
+\$_SERVER['HTTPS'] = true;
+
+EOF
+
+    echo "created support/preamble.php for HTTPS link generation"
+else
+    rm -f ${ROOT}/phorge/support/preamble.php
+    echo "potentially removed support/preamble.php for HTTP link generation"
+fi
 
 # set permissions for ssh hook
 chown root /usr/libexec/phorge_ssh_hook.sh
